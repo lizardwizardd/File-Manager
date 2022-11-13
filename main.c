@@ -1,13 +1,13 @@
 #include "header.h"
-#include <winuser.h>
 
-int elements;
+int elements; // Amount of files and directories in the current folder
 
-// return a pressed key as a value from 0 to 4
+// Return a pressed key as a value from 0 to 4
+// Arrow up = 1, Arrow down = 3, Arrow right = 2, Arrow left = 4, ESC = 0
 int getKey() {
 
     while(1) {
-        // this checks if the window is focused
+        // Check if the window is focused
         if(GetForegroundWindow() != GetConsoleWindow())
             continue;
         
@@ -26,35 +26,37 @@ int getKey() {
     }
 }
 
+// Change background color and text color of a given line 
 void printColoredLine(int line, int color_text, int color_back, char names[][100], char dates[][30], long long sizes[])
 {
     gotoxy(1, line + 2);
     textcolor(color_text);
     textbackground(color_back);
 
-    if (sizes[line] == -1) {
+    if (sizes[line] == -1)
         printf("%-26.26s %.24s  %14s\n", names[line], dates[line], "<DIR>");
-        //printf("%-26.26s %.24s", names[line], dates[line]); textcolor(BROWN); textbackground(color_back); printf("  %14s\n", "<DIR>"); textcolor(LIGHTGRAY);
-    }
-    else {
+    else
         printf("%-26.26s %.24s  %11lld KB\n", names[line], dates[line], sizes[line]);
-    }
 
+    // Set colors back to default
     textcolor(LIGHTGRAY);
     textbackground(BLACK);
 }
 
-// appends str2/*.* to the end of str1
+// Append str2/*.* to the end of str1
 void changePath(char str1[], char str2[]) 
 {
     int i = 0;
     int j = 0;
     int endfound = 0;
 
-    while ((str1[i] != '\0') && (str1[i] != '*')) {
+    while ((str1[i] != '\0') && (str1[i] != '*')) 
+    {
         i++;
     }
-    while (str2[j] != '\0') {
+
+    while (str2[j] != '\0') 
+    {
         str1[i] = str2[j];
         i++;
         j++;
@@ -67,7 +69,7 @@ void changePath(char str1[], char str2[])
     str1[i+4] = '\0';
 }
 
-// change path to previous directory
+// Change path to previous directory
 void prevDir(char path[])
 {
     int i = 0;
@@ -86,19 +88,7 @@ void prevDir(char path[])
     path[i+4] = '\0';
 }   
 
-int getStringSize(char str[])
-{
-    int i = 0;
-
-    while (str[i]!='\0')
-    {
-        i++;
-    }
-
-    return i;
-}
-
-// fills arrays with values from a specified directory
+// Fill arrays with values from a specified directory
 void getValues(char dir_path[], char names[][100], char dates[][30], long long sizes[])
 {
     struct _finddata_t c_file;
@@ -106,27 +96,28 @@ void getValues(char dir_path[], char names[][100], char dates[][30], long long s
     int count = 0;
     int skips = 0;
 
+    // Change dates[0] to ",," to indicate that the directory is empty
     if ((hFile = _findfirst(dir_path, &c_file)) == -1L)
         strcpy(dates[0], ",,");
     else
     {
         do 
         {
-            // skip first two files unless we're in C:
+            // Skip "." and ".." unless in root directory
             if (dir_path[3] != '*' && skips < 2) {
                 skips++;
                 continue;
             }
 
-            // fill names array
+            // Fill names array
             strcpy(names[count], c_file.name);
             
-            // fill dates array
+            // Fill dates array
             char buffer[30];
             ctime_s(buffer, _countof(buffer), &c_file.time_write);
             strcpy(dates[count], buffer);
 
-            // fill sizes array
+            // Fill sizes array
             if (c_file.size == 0) {
                 sizes[count] = -1;
             }
@@ -144,18 +135,17 @@ void getValues(char dir_path[], char names[][100], char dates[][30], long long s
     }
 }
 
-// print a table with all files and folders in in current directory
+// Print a table with all files and folders in the current directory
 void printDirectory(char path[], char names[][100], char dates[][30], long long sizes[])
 {
     printf(" Currrently browsing: %s\n\n", path);
-    if (strcmp(dates[0], "*") == 0) {
+    if (strcmp(dates[0], ",,") == 0) {
         printf("Empty directory.\n\n");
     }
     else {
         for (int i = 0; i < elements; i++) {
             if (sizes[i] == -1) {
                 printf(" %-26.26s %.24s  %14s\n", names[i], dates[i], "<DIR>");
-                //printf(" %-26.26s %.24s", names[i], dates[i]); textcolor(YELLOW); printf("  %14s\n", "<DIR>"); textcolor(LIGHTGRAY);
             }
             else {
                 printf(" %-26.26s %.24s  %11lld KB\n", names[i], dates[i], sizes[i]);
@@ -166,7 +156,6 @@ void printDirectory(char path[], char names[][100], char dates[][30], long long 
 }
 
 int main(void) {
-    // initalization
     const int max_files = 100;
     char path[100] = "C:\\*.*";
     char names[max_files][100];
@@ -182,7 +171,6 @@ int main(void) {
     hidecursor();
     setwindow(69, 40);
 
-    // main body
     getValues(path, names, dates, sizes);
     printDirectory(path, names, dates, sizes);
     printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
@@ -190,17 +178,18 @@ int main(void) {
     {
         key = -1;
         key = getKey();
-        if (key == 1) {
-            if (pos_in_menu > 0) {
+        if (key == 1) // Arrow up is pressed
+        {
+            if (pos_in_menu > 0)            // If not on the first line
+            {
                 prev_pos = pos_in_menu;
                 pos_in_menu--;
 
                 printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
                 printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
             }
-            else {
-                //gotoxy(10, 38); printf("now %d\n", pos_in_menu);
-
+            else                            // If on the first line
+            {
                 prev_pos = 0;
                 pos_in_menu = elements - 1; 
 
@@ -209,8 +198,9 @@ int main(void) {
             }
         }
 
-        if (key == 3) {
-            if (pos_in_menu < elements - 1)
+        if (key == 3) // Arrow down is pressed
+        {
+            if (pos_in_menu < elements - 1) // If not on the last line  
             {
                 prev_pos = pos_in_menu;
                 pos_in_menu++;
@@ -218,9 +208,8 @@ int main(void) {
                 printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
                 printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
             }
-            else {
-                //gotoxy(10, 38); printf("now %d\n", pos_in_menu);
-
+            else                            // If on the last line
+            {
                 prev_pos = elements - 1;
                 pos_in_menu = 0;
 
@@ -229,8 +218,9 @@ int main(void) {
             }
 
         }
-        if (key == 2) {
-            if (sizes[pos_in_menu] == -1) { // if it's a directory
+        if (key == 2) // Arrow right is pressed
+        {
+            if (sizes[pos_in_menu] == -1) { // If a directory is selected
                 changePath(path, names[pos_in_menu]);
                 getValues(path, names, dates, sizes);
                 clrscr();
@@ -245,7 +235,8 @@ int main(void) {
                 depth++;
             }
         }
-        if (key == 4) {
+        if (key == 4) // Arrow left is pressed 
+        {
             if (depth > 0) {
                 prevDir(path);
                 getValues(path, names, dates, sizes);
