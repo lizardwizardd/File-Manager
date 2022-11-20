@@ -8,6 +8,7 @@
 #include <locale.h>
 #include <windows.h>
 #include <stdio.h>
+#include <math.h>
 
 #include "windows.h"
 #include "winuser.h"

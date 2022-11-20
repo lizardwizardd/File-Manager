@@ -139,7 +139,8 @@ void getValues(char dir_path[], char names[][100], char dates[][30], long long s
 void printDirectory(char path[], char names[][100], char dates[][30], long long sizes[])
 {
     printf(" Currrently browsing: %s\n\n", path);
-    if (strcmp(dates[0], ",,") == 0) {
+    if (elements == 0) {
+        gotoxy(1, 0 + 2);
         printf("Empty directory.\n\n");
     }
     else {
@@ -180,43 +181,48 @@ int main(void) {
         key = getKey();
         if (key == 1) // Arrow up is pressed
         {
-            if (pos_in_menu > 0)            // If not on the first line
+            if (elements != 0)
             {
-                prev_pos = pos_in_menu;
-                pos_in_menu--;
+                if (pos_in_menu > 0)            // If not on the first line
+                {
+                    prev_pos = pos_in_menu;
+                    pos_in_menu--;
 
-                printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
-            }
-            else                            // If on the first line
-            {
-                prev_pos = 0;
-                pos_in_menu = elements - 1; 
+                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
+                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                }
+                else                            // If on the first line
+                {
+                    prev_pos = 0;
+                    pos_in_menu = elements - 1; 
 
-                printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
+                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                }
             }
         }
 
         if (key == 3) // Arrow down is pressed
         {
-            if (pos_in_menu < elements - 1) // If not on the last line  
+            if (elements != 0)
             {
-                prev_pos = pos_in_menu;
-                pos_in_menu++;
+                if (pos_in_menu < elements - 1) // If not on the last line  
+                {
+                    prev_pos = pos_in_menu;
+                    pos_in_menu++;
 
-                printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
+                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                }
+                else                            // If on the last line
+                {
+                    prev_pos = elements - 1;
+                    pos_in_menu = 0;
+
+                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
+                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                }
             }
-            else                            // If on the last line
-            {
-                prev_pos = elements - 1;
-                pos_in_menu = 0;
-
-                printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
-            }
-
         }
         if (key == 2) // Arrow right is pressed
         {
@@ -230,7 +236,8 @@ int main(void) {
                 prev_pos = 0;
 
                 printDirectory(path, names, dates, sizes);
-                printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                if (elements != 0)
+                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
                 
                 depth++;
             }
@@ -246,7 +253,8 @@ int main(void) {
                 prev_pos = 0;
 
                 printDirectory(path, names, dates, sizes);
-                printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                if (elements != 0)
+                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
 
                 depth--;
             }
