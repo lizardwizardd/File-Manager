@@ -1,4 +1,5 @@
 #include "header.h"
+#define MAX_FILES_ON_SCREEN 38
 
 int elements; // Amount of files and directories in the current folder
 
@@ -22,21 +23,21 @@ int getKey() {
         if (GetAsyncKeyState(VK_LEFT) & 0x07)
             return 4;
 
-        Sleep(200);
+        Sleep(180);
     }
 }
 
 // Change background color and text color of a given line 
-void printColoredLine(int line, int color_text, int color_back, char names[][100], char dates[][30], long long sizes[])
+void printColoredLine(int line, int color_text, int color_back, struct _finddata_t* file)
 {
-    gotoxy(1, line + 2);
+    gotoxy(0, line);
     textcolor(color_text);
     textbackground(color_back);
 
-    if (sizes[line] == -1)
-        printf("%-26.26s %.24s  %14s\n", names[line], dates[line], "<DIR>");
+    if (file[line].size == 0)
+        printf(" %-26.26s  %14s\n", file[line].name, "<DIR>");
     else
-        printf("%-26.26s %.24s  %11lld KB\n", names[line], dates[line], sizes[line]);
+        printf(" %-26.26s  %11lu KB\n", file[line].name, file[line].size / 1024);
 
     // Set colors back to default
     textcolor(LIGHTGRAY);
@@ -88,81 +89,90 @@ void prevDir(char path[])
     path[i+4] = '\0';
 }   
 
-// Fill arrays with values from a specified directory
-void getValues(char dir_path[], char names[][100], char dates[][30], long long sizes[])
+int getFileCount(char path[])
 {
     struct _finddata_t c_file;
     intptr_t hFile;
-    int count = 0;
-    int skips = 0;
 
-    // Change dates[0] to ",," to indicate that the directory is empty
-    if ((hFile = _findfirst(dir_path, &c_file)) == -1L)
-        strcpy(dates[0], ",,");
+    int count = 0;
+    if ((hFile = _findfirst(path, &c_file)) == -1L)
+        count = 0;
     else
     {
-        do 
+        do
+            count++;
+        while (_findnext(hFile, &c_file) == 0);
+
+        if (path[3] != '*')
+        count = count - 2;
+    }
+    return count;
+}
+
+struct _finddata_t* getValues(char path[])
+{
+    struct _finddata_t c_file;
+    intptr_t hFile;
+    
+    // Initaialize an array with the size of the amount of files 
+    elements = getFileCount(path);
+    struct _finddata_t *files_in_dir = (struct _finddata_t *)malloc(sizeof(struct _finddata_t) * elements);
+
+    int i = 0;
+    int skips = 0;
+    if ((hFile = _findfirst(path, &c_file)) == -1L)
+        files_in_dir[0].size = -1;
+    else
+        do
         {
-            // Skip "." and ".." unless in root directory
-            if (dir_path[3] != '*' && skips < 2) {
+            // Skip first two files ("." and "..") unless in root directory
+            if (path[3] != '*' && skips < 2) {
                 skips++;
                 continue;
             }
 
-            // Fill names array
-            strcpy(names[count], c_file.name);
-            
-            // Fill dates array
-            char buffer[30];
-            ctime_s(buffer, _countof(buffer), &c_file.time_write);
-            strcpy(dates[count], buffer);
-
-            // Fill sizes array
-            if (c_file.size == 0) {
-                sizes[count] = -1;
-            }
-            else {
-                sizes[count] = (long long) c_file.size/8/1024;
-            }
-
-            count++;
-        }   
-        while (_findnext(hFile, &c_file) == 0);
-
-        elements = count;
-        _findclose(hFile);
-
-    }
+            files_in_dir[i] = c_file;
+            i++;
+        } 
+        while(_findnext(hFile, &c_file) == 0);
+    _findclose(hFile);
+    return files_in_dir;
 }
 
 // Print a table with all files and folders in the current directory
-void printDirectory(char path[], char names[][100], char dates[][30], long long sizes[])
+void printDirectory(struct _finddata_t* files)
 {
-    printf(" Currrently browsing: %s\n\n", path);
+    int count = 0; 
     if (elements == 0) {
-        gotoxy(1, 0 + 2);
+        gotoxy(0, 0);
         printf("Empty directory.\n\n");
     }
     else {
+        gotoxy(0, 0);
         for (int i = 0; i < elements; i++) {
-            if (sizes[i] == -1) {
-                printf(" %-26.26s %.24s  %14s\n", names[i], dates[i], "<DIR>");
+            if (count > MAX_FILES_ON_SCREEN)
+                break;
+            else
+            {
+                if (files[i].size == 0) {
+                printf(" %-26.26s  %14s\n", files[i].name, "<DIR>");
             }
-            else {
-                printf(" %-26.26s %.24s  %11lld KB\n", names[i], dates[i], sizes[i]);
+                else {
+                printf(" %-26.26s  %11lu KB\n", files[i].name, files[i].size / 1024);
+            }
             }
         }
-        printf("\n Files in directory: %d\n\n", elements);
+        gotoxy(0, 39);
+        printf("Files in directory: %d", elements);
     }
 }
 
-int main(void) {
-    const int max_files = 100;
+
+int main(void)
+{
+    struct _finddata_t* files;
     char path[100] = "C:\\*.*";
-    char names[max_files][100];
-    char dates[max_files][30];
-    long long sizes[max_files];
-    
+
     int pos_in_menu = 0; // selected file
     int prev_pos = 0;    // previous selected file
     int key = -1;        // key pressed
@@ -170,97 +180,113 @@ int main(void) {
     int pos_in_prev_dir; // position in previous directory
 
     hidecursor();
-    setwindow(69, 40);
+    setwindow(44, 40);
 
-    getValues(path, names, dates, sizes);
-    printDirectory(path, names, dates, sizes);
-    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+    files = getValues(path);
+    printDirectory(files);
+    printColoredLine(pos_in_menu, BLACK, WHITE, files);
+
     while (key != 0) 
     {
         key = -1;
         key = getKey();
-        if (key == 1) // Arrow up is pressed
+        switch(key)
         {
-            if (elements != 0)
-            {
-                if (pos_in_menu > 0)            // If not on the first line
+            case 1:    // Arrow up is pressed
+                if (elements != 0)
                 {
-                    prev_pos = pos_in_menu;
-                    pos_in_menu--;
+                    if (pos_in_menu > 0)            // If not on the first line
+                    {
+                        prev_pos = pos_in_menu;
+                        pos_in_menu--;
 
-                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                        printColoredLine(prev_pos, LIGHTGRAY, BLACK, files);
+                        printColoredLine(pos_in_menu, BLACK, WHITE, files);
+                    }
+                    else                            // If on the first line
+                    {
+                        prev_pos = 0;
+                        if (elements > MAX_FILES_ON_SCREEN)
+                            pos_in_menu = MAX_FILES_ON_SCREEN - 1;
+                        else
+                            pos_in_menu = elements - 1;
+
+                        printColoredLine(prev_pos, LIGHTGRAY, BLACK, files);
+                        printColoredLine(pos_in_menu, BLACK, WHITE, files);
+                    }
                 }
-                else                            // If on the first line
-                {
-                    prev_pos = 0;
-                    pos_in_menu = elements - 1; 
+                break;
 
-                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+            case 3:    // Arrow down is pressed
+                if (elements != 0)
+                {   // If on the last line (case 1)
+                    if ((pos_in_menu == elements - 1) && elements < MAX_FILES_ON_SCREEN) 
+                    {
+                        prev_pos = elements - 1;
+                        pos_in_menu = 0;
+
+                        printColoredLine(prev_pos, LIGHTGRAY, BLACK, files);
+                        printColoredLine(pos_in_menu, BLACK, WHITE, files);
+                    }
+                    else
+                    {   // If on the last line (case 2)
+                        if (pos_in_menu == MAX_FILES_ON_SCREEN - 1) 
+                        {
+                            prev_pos = MAX_FILES_ON_SCREEN - 1;
+                            pos_in_menu = 0;
+                            
+                            printColoredLine(prev_pos, LIGHTGRAY, BLACK, files);
+                            printColoredLine(pos_in_menu, BLACK, WHITE, files);
+                        }
+                        else                            // If on the last line
+                        {
+                            prev_pos = pos_in_menu;
+                            pos_in_menu++;
+
+                            printColoredLine(prev_pos, LIGHTGRAY, BLACK, files);
+                            printColoredLine(pos_in_menu, BLACK, WHITE, files);
+                        }
+                    }
                 }
-            }
-        }
+                break;
 
-        if (key == 3) // Arrow down is pressed
-        {
-            if (elements != 0)
-            {
-                if (pos_in_menu < elements - 1) // If not on the last line  
-                {
-                    prev_pos = pos_in_menu;
-                    pos_in_menu++;
+            case 2:    // Arrow right is pressed
+                if (files[pos_in_menu].size == 0) // If a directory is selected
+                { 
+                    changePath(path, files[pos_in_menu].name);
+                    files = getValues(path);
+                    clrscr();
 
-                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
-                }
-                else                            // If on the last line
-                {
-                    prev_pos = elements - 1;
+                    pos_in_prev_dir = pos_in_menu;
                     pos_in_menu = 0;
+                    prev_pos = 0;
 
-                    printColoredLine(prev_pos, LIGHTGRAY, BLACK, names, dates, sizes);
-                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
-                }
-            }
-        }
-        if (key == 2) // Arrow right is pressed
-        {
-            if (sizes[pos_in_menu] == -1) { // If a directory is selected
-                changePath(path, names[pos_in_menu]);
-                getValues(path, names, dates, sizes);
-                clrscr();
-
-                pos_in_prev_dir = pos_in_menu;
-                pos_in_menu = 0;
-                prev_pos = 0;
-
-                printDirectory(path, names, dates, sizes);
+                    printDirectory(files);
                 if (elements != 0)
-                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
-                
-                depth++;
-            }
-        }
-        if (key == 4) // Arrow left is pressed 
-        {
-            if (depth > 0) {
-                prevDir(path);
-                getValues(path, names, dates, sizes);
-                clrscr();
+                    printColoredLine(pos_in_menu, BLACK, WHITE, files);
 
-                pos_in_menu = pos_in_prev_dir;
-                prev_pos = 0;
+                depth++; }
+                break;
 
-                printDirectory(path, names, dates, sizes);
+            case 4:    // Arrow left is pressed 
+                if (depth > 0) {
+                    prevDir(path);
+                    files = getValues(path);
+                    clrscr();
+
+                    pos_in_menu = pos_in_prev_dir;
+                    prev_pos = 0;
+
+                    printDirectory(files);
                 if (elements != 0)
-                    printColoredLine(pos_in_menu, BLACK, WHITE, names, dates, sizes);
+                    printColoredLine(pos_in_menu, BLACK, WHITE, files);
 
-                depth--;
-            }
+                depth--;}
+                break;
+
+            case 0:
+                return 1;
         }
-        if (key == 0)
-            return 1;
     }
     system("pause");
     return 1;
