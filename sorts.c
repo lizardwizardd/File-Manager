@@ -163,11 +163,40 @@ void sort_quick(struct _finddata_t arr[], int size)
     }
     if (i < size) {
         //"Right part"
-        sort_quick(&arr[i], size - i);
+        sort_quick(arr, size - i);
     }
 }
 
-void sort_shell(int n, struct _finddata_t arr[])
+/* function to sort arr using shellSort */
+int sort_shell(struct _finddata_t arr[], int n)
+{
+    // Start with a big gap, then reduce the gap
+    for (int gap = n/2; gap > 0; gap /= 2)
+    {
+        // Do a gapped insertion sort for this gap size.
+        // The first gap elements a[0..gap-1] are already in gapped order
+        // keep adding one more element until the entire array is
+        // gap sorted
+        for (int i = gap; i < n; i += 1)
+        {
+            // add a[i] to the elements that have been gap sorted
+            // save a[i] in temp and make a hole at position i
+            struct _finddata_t temp = arr[i];
+ 
+            // shift earlier gap-sorted elements up until the correct
+            // location for a[i] is found
+            int j;           
+            for (j = i; j >= gap && arr[j - gap].size > temp.size; j -= gap)
+                arr[j] = arr[j - gap];
+             
+            //  put temp (the original a[i]) in its correct location
+            arr[j] = temp;
+        }
+    }
+    return 0;
+}
+/*
+void sort_shell(struct _finddata_t arr[], int n)
 {
     int i, j, step;
     struct _finddata_t tmp;
@@ -185,3 +214,4 @@ void sort_shell(int n, struct _finddata_t arr[])
             arr[j] = tmp;
         }
 }
+*/

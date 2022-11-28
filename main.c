@@ -1,6 +1,5 @@
 #include "libs.h"
 #include "header.h"
-//#include <corecrt_io.h>
 
 #define MAX_FILES_ON_SCREEN 38
 
@@ -39,8 +38,6 @@ int getKey_Sort()
         if(GetForegroundWindow() != GetConsoleWindow())
             continue;
         
-        if (GetAsyncKeyState(0x30) & 0x07)
-            return 0;
         if (GetAsyncKeyState(0x31) & 0x07)
             return 1;
         if (GetAsyncKeyState(0x32) & 0x07)
@@ -49,12 +46,14 @@ int getKey_Sort()
             return 3;
         if (GetAsyncKeyState(0x34) & 0x07)
             return 4;
-        if (GetAsyncKeyState(0x34) & 0x07)
+        if (GetAsyncKeyState(0x35) & 0x07)
             return 5;
-        if (GetAsyncKeyState(0x34) & 0x07)
+        if (GetAsyncKeyState(0x36) & 0x07)
             return 6;
+        if (GetAsyncKeyState(0x30) & 0x07)
+            return 0;
 
-        Sleep(100);
+        Sleep(150);
     }
 }
 
@@ -339,28 +338,31 @@ int main(void)
                         switch (key2)
                         {
                             case 0:
-                                printDirectory(files);
-                                printColoredLine(0, BLACK, WHITE, files);
-                                pos_in_menu = 0;
-                                prev_pos = 0;
                                 break;
                             case 1:
                                 sort_bubble(files, elements);
-                                printDirectory(files);
-                                printColoredLine(0, BLACK, WHITE, files);
-                                pos_in_menu = 0;
-                                prev_pos = 0;
-                                key2 = 0;
                                 break;
                             case 2:
-                                sort_bubble(files, elements);
-                                printDirectory(files);
-                                printColoredLine(0, BLACK, WHITE, files);
-                                pos_in_menu = 0;
-                                prev_pos = 0;
-                                key2 = 0;
+                                sort_selection(files, elements);
+                                break;
+                            case 3:
+                                sort_insertion(files, elements);
+                                break;
+                            case 4:
+                                sort_merge(files, 0, elements - 1);
+                                break;
+                            case 5:
+                                sort_quick(files, elements);
+                                break;
+                            case 6:
+                                sort_shell(files, elements);
                                 break;
                         }
+                        printDirectory(files);
+                        printColoredLine(0, BLACK, WHITE, files);
+                        pos_in_menu = 0;
+                        prev_pos = 0;
+                        key2 = 0;
                     } 
                 }
                 break;
