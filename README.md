@@ -1,4 +1,4 @@
-# File-Manager
+# File Manager
 File manager with the functions of browsing directories, moving from one directory to another and sorting files in directory.
 
 
