@@ -1,12 +1,15 @@
+#include "libs.h"
 #include "header.h"
+//#include <corecrt_io.h>
+
 #define MAX_FILES_ON_SCREEN 38
 
 int elements; // Amount of files and directories in the current folder
 
 // Return a pressed key as a value from 0 to 4
 // Arrow up = 1, Arrow down = 3, Arrow right = 2, Arrow left = 4, ESC = 0
-int getKey() {
-
+int getKey_Browse() 
+{
     while(1) {
         // Check if the window is focused
         if(GetForegroundWindow() != GetConsoleWindow())
@@ -22,8 +25,64 @@ int getKey() {
             return 3;
         if (GetAsyncKeyState(VK_LEFT) & 0x07)
             return 4;
+        if (GetAsyncKeyState(VK_SPACE) & 0x07)
+            return 5;
 
         Sleep(180);
+    }
+}
+
+int getKey_Sort() 
+{
+    while(1) {
+        // Check if the window is focused
+        if(GetForegroundWindow() != GetConsoleWindow())
+            continue;
+        
+        if (GetAsyncKeyState(0x30) & 0x07)
+            return 0;
+        if (GetAsyncKeyState(0x31) & 0x07)
+            return 1;
+        if (GetAsyncKeyState(0x32) & 0x07)
+            return 2;
+        if (GetAsyncKeyState(0x33) & 0x07)
+            return 3;
+        if (GetAsyncKeyState(0x34) & 0x07)
+            return 4;
+        if (GetAsyncKeyState(0x34) & 0x07)
+            return 5;
+        if (GetAsyncKeyState(0x34) & 0x07)
+            return 6;
+
+        Sleep(100);
+    }
+}
+
+// Print a table with all files and folders in the current directory
+void printDirectory(struct _finddata_t* files)
+{
+    int count = 0; 
+    if (elements == 0) {
+        gotoxy(0, 0);
+        printf("Empty directory.\n\n");
+    }
+    else {
+        gotoxy(0, 0);
+        for (int i = 0; i < elements; i++) {
+            if (count > MAX_FILES_ON_SCREEN)
+                break;
+            else
+            {
+                if (files[i].size == 0) {
+                printf(" %-26.26s  %14s\n", files[i].name, "<DIR>");
+            }
+                else {
+                printf(" %-26.26s  %11lu KB\n", files[i].name, files[i].size / 1024);
+            }
+            }
+        }
+        gotoxy(0, 39);
+        printf("Files in directory: %d", elements);
     }
 }
 
@@ -139,34 +198,6 @@ struct _finddata_t* getValues(char path[])
     return files_in_dir;
 }
 
-// Print a table with all files and folders in the current directory
-void printDirectory(struct _finddata_t* files)
-{
-    int count = 0; 
-    if (elements == 0) {
-        gotoxy(0, 0);
-        printf("Empty directory.\n\n");
-    }
-    else {
-        gotoxy(0, 0);
-        for (int i = 0; i < elements; i++) {
-            if (count > MAX_FILES_ON_SCREEN)
-                break;
-            else
-            {
-                if (files[i].size == 0) {
-                printf(" %-26.26s  %14s\n", files[i].name, "<DIR>");
-            }
-                else {
-                printf(" %-26.26s  %11lu KB\n", files[i].name, files[i].size / 1024);
-            }
-            }
-        }
-        gotoxy(0, 39);
-        printf("Files in directory: %d", elements);
-    }
-}
-
 
 int main(void)
 {
@@ -183,13 +214,14 @@ int main(void)
     setwindow(44, 40);
 
     files = getValues(path);
+    sort_bubble(files, elements);
     printDirectory(files);
     printColoredLine(pos_in_menu, BLACK, WHITE, files);
 
     while (key != 0) 
     {
         key = -1;
-        key = getKey();
+        key = getKey_Browse();
         switch(key)
         {
             case 1:    // Arrow up is pressed
@@ -284,7 +316,57 @@ int main(void)
                 depth--;}
                 break;
 
+            case 5:
+                if (elements > 0) {
+                    clrscr();
+                    gotoxy(0,0);
+                    printf
+                        (
+                        "Press a key to choose a sort method\n\n"
+                        "1 - Bubble sort\n"
+                        "2 - Selection sort\n"
+                        "3 - Insertion sort\n"
+                        "4 - Merge sort\n"
+                        "5 - Quick sort\n"
+                        "6 - Shell sort\n\n"
+                        "0 - Cancel"
+                        );
+                    int key2 = -1;
+                    while (key2 != 0)
+                    {
+                        key2 = getKey_Sort();
+                        clrscr();
+                        switch (key2)
+                        {
+                            case 0:
+                                printDirectory(files);
+                                printColoredLine(0, BLACK, WHITE, files);
+                                pos_in_menu = 0;
+                                prev_pos = 0;
+                                break;
+                            case 1:
+                                sort_bubble(files, elements);
+                                printDirectory(files);
+                                printColoredLine(0, BLACK, WHITE, files);
+                                pos_in_menu = 0;
+                                prev_pos = 0;
+                                key2 = 0;
+                                break;
+                            case 2:
+                                sort_bubble(files, elements);
+                                printDirectory(files);
+                                printColoredLine(0, BLACK, WHITE, files);
+                                pos_in_menu = 0;
+                                prev_pos = 0;
+                                key2 = 0;
+                                break;
+                        }
+                    } 
+                }
+                break;
+
             case 0:
+                system("pause");
                 return 1;
         }
     }

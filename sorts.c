@@ -1,41 +1,26 @@
-#include "header.h"
+#include "libs.h"
 
-//
-// TODO: redo all sorts to sort 1 array for greater efficency and simplicity
-//
-
-void swapInt(int* xp, int* yp)
+void swapFiles(struct _finddata_t* file1, struct _finddata_t* file2)
 {
-    int temp = *xp;
-    *xp = *yp;
-    *yp = temp;
+    struct _finddata_t temp = *file1;
+    *file1 = *file2;
+    *file2 = temp;
 }
 
-void swapStr(char *str1, char *str2)
-{
-    char *temp = (char *)malloc((strlen(str1) + 1) * sizeof(char));
-    strcpy(temp, str1);
-    strcpy(str1, str2);
-    strcpy(str2, temp);
-    free(temp);
-}
-
-void SortBubble(char names[][100], char dates[][30], int sizes[], int n)
+// Bubble sort
+void sort_bubble(struct _finddata_t arr[], int n)
 {
     int i, j;
     for (i = 0; i < n - 1; i++)
-
+ 
+        // Last i elements are already in place
         for (j = 0; j < n - i - 1; j++)
-            if (sizes[j] > sizes[j + 1])
-            {
-                swapInt(&sizes[j], &sizes[j + 1]);
-                swapStr(names[j], names[j + 1]);
-                swapStr(dates[j], dates[j + 1]);
-            }
+            if (arr[j].size > arr[j + 1].size)
+                swapFiles(&arr[j], &arr[j + 1]);
 }
 
-
-void SortSelection(int sizes[], int n)
+// Selection sort
+void sort_selection(struct _finddata_t arr[], int n)
 {
     int i, j, min_idx;
  
@@ -45,43 +30,158 @@ void SortSelection(int sizes[], int n)
         // Find the minimum element in unsorted array
         min_idx = i;
         for (j = i+1; j < n; j++)
-          if (sizes[j] < sizes[min_idx])
+          if (arr[j].size < arr[min_idx].size)
             min_idx = j;
  
         // Swap the found minimum element with the first element
            if(min_idx != i)
-            swapInt(&sizes[min_idx], &sizes[i]);
+            swapFiles(&arr[min_idx], &arr[i]);
     }
 }
 
-
-void SortInsertion(int sizes[], int n)
+// Insertion sort
+void sort_insertion(struct _finddata_t arr[], int n)
 {
     int i, key, j;
     for (i = 1; i < n; i++) {
-        key = sizes[i];
+        key = arr[i].size;
         j = i - 1;
  
         /* Move elements of arr[0..i-1], that are
           greater than key, to one position ahead
           of their current position */
-        while (j >= 0 && sizes[j] > key) {
-            sizes[j + 1] = sizes[j];
+        while (j >= 0 && arr[j].size > key) {
+            arr[j + 1].size = arr[j].size;
             j = j - 1;
         }
-        sizes[j + 1] = key;
+        arr[j + 1].size = key;
     }
 }
 
-
-/*int main()
+// Merges two subarrays of arr[].
+// First subarray is arr[l..m]
+// Second subarray is arr[m+1..r]
+void sort_merge_arrays(struct _finddata_t arr[], int l, int m, int r)
 {
-    int sizes[4] = {2, 1, 7, 4};
-    char names[4][100] = {"n2", "n1", "n7", "n4"};
-    char dates[4][30] = {"d2", "d1", "d7", "d4"};
+    int i, j, k;
+    int n1 = m - l + 1;
+    int n2 = r - m;
+ 
+    /* create temp arrays */
+    struct _finddata_t L[n1], R[n2];
+ 
+    /* Copy data to temp arrays L[] and R[] */
+    for (i = 0; i < n1; i++)
+        L[i] = arr[l + i];
+    for (j = 0; j < n2; j++)
+        R[j] = arr[m + 1 + j];
+ 
+    /* Merge the temp arrays back into arr[l..r]*/
+    i = 0; // Initial index of first subarray
+    j = 0; // Initial index of second subarray
+    k = l; // Initial index of merged subarray
+    while (i < n1 && j < n2) {
+        if (L[i].size <= R[j].size) {
+            arr[k] = L[i];
+            i++;
+        }
+        else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+ 
+    /* Copy the remaining elements of L[], if there
+    are any */
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+ 
+    /* Copy the remaining elements of R[], if there
+    are any */
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
 
-    sort_bubble(names, dates, sizes, 4);
+/* l is for left index and r is right index of the
+sub-array of arr to be sorted */
+void sort_merge(struct _finddata_t arr[], int l, int r)
+{
+    if (l < r) {
+        // Same as (l+r)/2, but avoids overflow for
+        // large l and h
+        int m = l + (r - l) / 2;
+ 
+        // Sort first and second halves
+        sort_merge(arr, l, m);
+        sort_merge(arr, m + 1, r);
+ 
+        sort_merge_arrays(arr, l, m, r);
+    }
+}
 
-    printf("%s %s %s %s\n%d %d %d %d", names[0],names[1],names[2],names[3], sizes[0], sizes[1], sizes[2], sizes[3]);
-} */
+void sort_quick(struct _finddata_t arr[], int size) 
+{
+    // Pointers to the start and the end of an array
+    int i = 0;
+    int j = size - 1;
 
+    // Central element of an array
+    struct _finddata_t mid = arr[size / 2];
+
+    // Divide an array
+    do {
+        while(arr[i].size < mid.size) {
+            i++;
+        }
+        // Skip elements that are higher than the central array
+        while(arr[j].size > mid.size) {
+            j--;
+        }
+
+        // Change places of elements
+        if (i <= j) {
+            struct _finddata_t tmp = arr[i];
+            arr[i] = arr[j];
+            arr[j] = tmp;
+
+            i++;
+            j--;
+        }
+    } while (i <= j);
+
+    //Recursive calls, if there's still something to sort 
+    if(j > 0) {
+        //"Left part"
+        sort_quick(arr, j + 1);
+    }
+    if (i < size) {
+        //"Right part"
+        sort_quick(&arr[i], size - i);
+    }
+}
+
+void sort_shell(int n, struct _finddata_t arr[])
+{
+    int i, j, step;
+    struct _finddata_t tmp;
+    for (step = n / 2; step > 0; step /= 2)
+        for (i = step; i < n; i++)
+        {
+            tmp = arr[i];
+            for (j = i; j >= step; j -= step)
+            {
+                if (tmp.size < arr[j - step].size)
+                    arr[j] = arr[j - step];
+                else
+                    break;
+            }
+            arr[j] = tmp;
+        }
+}
